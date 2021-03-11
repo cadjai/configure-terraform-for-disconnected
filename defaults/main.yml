@@ -1,0 +1,32 @@
+---
+# defaults file for collect-and-configure-terraform-for-disconnected-env
+ver_terraform_package: "0.12.30"
+ansible_module_name: "terraform-provider-binary-collector"
+config_default_terraform_provider: "true"
+install_terraform_provider: "true"
+install_terraform_provider_bundle: "/tmp/tf-providers-bundle.tar.gz"
+terraform_client_binary: "/tmp/tmerraform-provider-ovirt"
+tf_dir_bundle_location: "/tmp"
+local_home: "{{ lookup('env', 'HOME') }}"
+terraform_provider_dir: "{{ local_home }}/.terraform.d/plugins"
+terraform_provider_config_file: "{{ local_home }}/.terraformrc"
+terraform_provider_full_name: "terraform-provider-ovirt"
+terraform_domain: "myofflineregistry"
+terraform_namespace: "dev"
+terraform_providers:
+  aws:
+    version: "3.24.1"
+  azurerm:
+    version: "2.44.0"
+  vsphere:
+    version: "1.24.3"
+  ovirt:
+    version: "0.4.2"
+    default: true
+  openstack:
+    version: "1.35.0"
+  google:
+    version: "3.52.0"
+  ibm:
+    version: "1.19.0"
+terraform_provider_type: "linux_amd64"
