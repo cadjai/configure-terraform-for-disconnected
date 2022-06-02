@@ -1,0 +1,84 @@
+#!/usr/bin/ansible-playbook --inventory=inventory
+- name: "Konductor | Provision UPI Infra | config-local-aws-terraform-provider.yml"
+  hosts: localhost
+  vars_files:
+    #- 'vars/vault.yml'
+    #- 'vars/global.yml'
+  vars:
+    module: "terraform-provider-local"
+    config_terraform_provider: "true"
+    install_terraform_provider: "true"
+    install_terraform_provider_binary: "/tmp/terraform-provider-aws_3.74.3_linux_amd64.zip"
+    install_terraform_provider_name: "aws"
+    install_terraform_provider_version: "3.74.3"
+    tf_dir_bundle_location: "/tmp"
+    local_home: "{{ lookup('env', 'HOME') }}"
+    terraform_provider_dir: "{{ local_home }}/.terraform.d/plugins"
+    terraform_provider_config_file: "{{ local_home }}/.terraformrc"
+    terraform_provider_full_name: "terraform-provider-aws"
+    terraform_domain: "terraform-provider-aws"
+    terraform_namespace: "dev"
+    terraform_provider_type: "linux_amd64"
+    ansible_name_module: "{{ ansible_name }} | {{ module }}"
+    aws_region: "us-east-1"
+    aws_access_key: ""
+    aws_access_secret: ""
+  tasks:
+    - name: '{{ ansible_name_module }} | install terraform provider binary'
+      when:
+        - install_terraform_provider is defined
+        - install_terraform_provider | bool
+      block:
+        - name: '{{ ansible_name_module }} | shell | get installed tf version '
+          shell: terraform version | head -n 1 | awk '{print $2}'
+          ignore_errors: true
+          register: ter_ver
+
+        - name: '{{ ansible_name_module }} | file:state=directory | Ensure terraform provider directory exist '
+          file:
+            path: "{{ terraform_provider_dir }}"
+            state: directory
+            recurse: true
+
+        - name: '{{ ansible_name_module }} | file:state=directory | for each provider '
+          file:
+            path: "{{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ install_terraform_provider_name }}/{{ install_terraform_provider_version }}/{{ terraform_provider_type }}"
+            state: directory
+            recurse: true
+
+        - name: '{{ ansible_name_module }} | unarchive | bundle provider files to host'
+          unarchive:
+            src: "{{ install_terraform_provider_binary }}"
+            remote_src: yes
+            dest: "{{ terraform_provider_dir}}/"
+            dest: "{{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ install_terraform_provider_name }}/{{ install_terraform_provider_version }}/{{ terraform_provider_type }}"
+            mode: 0755
+          register: unbundle_out
+
+    - name: '{{ ansible_name_module }} | Configure aws terraform provider'
+      when:
+        - (install_terraform_provider is defined and install_terraform_provider | bool) or (config_terraform_provider is defined and config_terraform_provider | bool)
+      block:
+        - name: '{{ ansible_name_module }} | template | create terraform provider v14 config file'
+          template:
+            src: "templates/terraformrc-aws.j2"
+            dest: "{{ terraform_provider_dir }}/main.tf"
+            mode: 0755
+            force: yes
+
+        - name: '{{ ansible_name_module }} | template | create terraform provider v14 config file'
+          template:
+            src: "templates/provider-local.j2"
+            dest: "{{ terraform_provider_dir }}/provider.tf"
+            mode: 0755
+            force: yes
+
+        - name: '{{ ansible_name_module }} | shell:terraform.init | Initilize terraform provider module'
+          shell:
+            cmd: terraform init
+            chdir: "{{ terraform_provider_dir }}"
+          failed_when:
+            - terraform_init.rc > 1
+            - " not 'not available for installation' in terraform_init.stderr "
+          register: terraform_init
+

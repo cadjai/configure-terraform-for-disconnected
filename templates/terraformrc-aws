@@ -1,0 +1,8 @@
+terraform {
+  required_providers {
+    aws = {
+      source = "terraform-provider-aws/dev/aws"
+      version = "3.74.3"
+    }
+  }
+}
