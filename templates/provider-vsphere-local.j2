@@ -1,0 +1,6 @@
+provider "vsphere" {
+  user                 = {{ vsphere_vcenter_user }}
+  pasword              = {{ vsphere_vcenter_passwd }}
+  vsphere_server       = {{ vsphere_vcenter_server }}
+  allow_unverified_ssl = true
+}
